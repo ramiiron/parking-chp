@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Parking CHP — Médicos</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230a4d8c'/%3E%3Ctext x='50' y='70' font-size='58' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'%3EP%3C/text%3E%3C/svg%3E">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#0a4d8c">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-512.png">
+<style>
+/* ===== Parking CHP — Sistema de diseño v2 =====
+   Contexto: app de trabajo en una clínica, uso a pleno sol, un solo usuario mayor.
+   Paleta clínica (azul + celeste/teal: confianza, higiene, salud) y semáforo de
+   estados universal: rojo = atención, ámbar = en espera, verde = completado. */
+:root{
+  --bg:#eef4f8; --card:#ffffff; --ink:#12212e; --muted:#4d6070;
+  --brand:#0a4d8c; --brand2:#0e7c86; --brand-ink:#ffffff;
+  --sky:#e3eefb; --accent:#ffb703;
+  --ok:#177245; --okbg:#e3f4ea; --okline:#2e9e67;
+  --bad:#b3261e; --badbg:#fdecea; --badline:#d64541;
+  --wait:#9a6206; --waitbg:#fdf1dc; --waitline:#e0a32e;
+  --line:#cfdde8; --radius:16px;
+  --shadow:0 2px 10px rgba(10,77,140,.08), 0 1px 3px rgba(10,77,140,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:17px}
+body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:96px;-webkit-tap-highlight-color:transparent}
+header{background:linear-gradient(135deg,#083b6b 0%,var(--brand) 55%,var(--brand2) 130%);color:#fff;padding:14px 16px 12px;position:sticky;top:0;z-index:10;box-shadow:0 4px 18px rgba(8,59,107,.28)}
+.brand{display:flex;align-items:center;gap:14px}
+.logo{width:44px;height:44px;border-radius:12px;background:#fff;color:var(--brand);font-weight:900;font-size:1.35rem;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 -4px 0 rgba(10,77,140,.18);flex:none}
+header h1{font-size:1.3rem;font-weight:900;letter-spacing:.2px;line-height:1.1}
+.hsub{font-size:.82rem;opacity:.85;font-weight:600}
+header p#hdr-fecha{margin-top:8px;font-size:.88rem;font-weight:700;text-transform:capitalize;background:rgba(255,255,255,.14);display:inline-block;padding:4px 12px;border-radius:99px}
+main{max-width:680px;margin:0 auto;padding:14px}
+.view{display:none}.view.on{display:block}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:14px;box-shadow:var(--shadow)}
+.card.st-pend{border-left:8px solid var(--badline)}
+.card.st-wait{border-left:8px solid var(--waitline)}
+.card.st-done{border-left:8px solid var(--okline)}
+button{font:inherit;cursor:pointer;border:none;border-radius:14px;min-height:56px;transition:transform .06s ease, box-shadow .15s ease, background .15s ease}
+button:active{transform:scale(.985)}
+.btn{background:var(--brand);color:#fff;padding:13px 16px;font-weight:800;width:100%;font-size:1.02rem;box-shadow:0 3px 10px rgba(10,77,140,.25)}
+.btn.accent{background:linear-gradient(180deg,#ffc233,var(--accent));color:#231a00;box-shadow:0 4px 14px rgba(255,183,3,.4);font-size:1.05rem}
+.btn.ghost{background:#fff;color:var(--brand);border:2px solid var(--brand);box-shadow:none}
+.btn.danger{background:#fff;color:var(--bad);border:2px solid var(--badline);box-shadow:none}
+.btn.sm{min-height:48px;width:auto;padding:10px 16px;font-size:1rem}
+.rowbtns{display:flex;gap:10px}.rowbtns>*{flex:1}
+label{display:block;font-size:.98rem;font-weight:800;margin:16px 0 6px;color:var(--brand)}
+input,select{width:100%;padding:12px;border:2px solid #9fb4c4;border-radius:12px;font:inherit;background:#fff;font-size:1.02rem;color:var(--ink)}
+input:focus,select:focus{outline:3px solid var(--accent);border-color:var(--brand)}
+.searchwrap{padding:2px 0 10px}
+.searchbox{position:relative}
+.searchbox .sic{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:1.1rem;pointer-events:none}
+#buscador{font-size:1.12rem;padding:14px 14px 14px 46px;border:3px solid var(--brand);border-radius:18px;background:#fff;box-shadow:var(--shadow)}
+.plate{display:inline-block;background:linear-gradient(180deg,#ffffff,#f2f6f9);border:3px solid #16324a;border-radius:10px;padding:3px 12px;font-family:'Courier New',monospace;font-weight:900;font-size:1.5rem;letter-spacing:2px;line-height:1.15;color:#0b2237;box-shadow:inset 0 3px 0 var(--brand2)}
+.medico{font-size:1.18rem;font-weight:800;margin-top:8px}
+.meta{font-size:.98rem;color:var(--muted);margin-top:3px}
+.meta b{color:var(--ink)}
+.badge{display:inline-flex;align-items:center;gap:7px;font-weight:800;padding:5px 12px;border-radius:99px;font-size:.85rem}
+.badge::before{content:"";width:10px;height:10px;border-radius:50%;background:currentColor;flex:none}
+.badge.pend{background:var(--badbg);color:var(--bad)}
+.badge.wait{background:var(--waitbg);color:var(--wait)}
+.badge.done{background:var(--okbg);color:var(--ok)}
+.badge.fecha{background:var(--sky);color:var(--brand)}
+.badge.fecha::before{display:none}
+.car-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.togs{display:flex;gap:10px;margin-top:14px}
+.tog{flex:1;font-weight:900;font-size:.95rem;padding:10px 8px;border-radius:14px;border:3px solid var(--badline);background:#fff;color:var(--bad);min-height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.tog[data-tretiro]{border-color:var(--waitline);color:var(--wait)}
+.tog.on{border-color:var(--okline);background:var(--okbg);color:var(--ok)}
+.tog .ck{font-size:1.2rem;line-height:1.1}
+.counters{display:flex;gap:10px;text-align:center}
+.counters>div{flex:1;background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:12px 4px 10px;box-shadow:var(--shadow)}
+.counters>div:nth-child(1){border-top:6px solid var(--badline)}
+.counters>div:nth-child(2){border-top:6px solid var(--waitline)}
+.counters>div:nth-child(3){border-top:6px solid var(--okline)}
+.counters .n{font-size:1.45rem;font-weight:900}
+.counters .l{font-size:.72rem;color:var(--muted);font-weight:800;line-height:1.25;letter-spacing:.3px}
+.empty{text-align:center;font-size:1rem;color:var(--muted);padding:28px 12px;line-height:1.55}
+.note{font-size:.95rem;color:var(--muted);line-height:1.5}
+h2{font-size:1.18rem;margin-bottom:6px;color:var(--brand)}
+h3.sec{font-size:1rem;margin:16px 0 10px;color:var(--brand);font-weight:900;letter-spacing:.2px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{background:#fff;border:2px solid #9fb4c4;color:var(--ink);font-weight:700;padding:10px 14px;min-height:52px;border-radius:99px}
+.chips button.on{border-color:var(--brand);background:var(--brand);color:#fff}
+#sugerencia{display:none;background:#fffaf0;border:2px solid var(--accent);border-radius:16px;padding:14px;margin-top:16px}
+#sugerencia .t{font-weight:800;margin-bottom:8px}
+.dayrow{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px;text-align:left;box-shadow:var(--shadow)}
+.dayrow .d{font-weight:800;font-size:1.1rem;text-transform:capitalize;color:var(--ink)}
+.dayrow .s{font-size:.95rem;color:var(--muted)}
+.strike{text-decoration:line-through;opacity:.55}
+nav{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.97);border-top:2px solid var(--line);display:flex;z-index:10;box-shadow:0 -4px 18px rgba(10,77,140,.08)}
+nav button{flex:1;background:none;padding:8px 4px 12px;font-size:.98rem;font-weight:800;color:var(--muted);border-radius:0;min-height:64px}
+nav button.on{color:var(--brand);box-shadow:inset 0 4px 0 var(--accent)}
+nav button span{display:block;font-size:1.3rem;margin-bottom:2px}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:92px;background:#12212e;color:#fff;font-size:1.05rem;font-weight:700;padding:14px 22px;border-radius:99px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:20;max-width:92vw;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+#toast.show{opacity:1}
+.del{background:none;color:var(--bad);font-weight:700;min-height:44px;padding:6px 10px;box-shadow:none}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">P</div>
+    <div>
+      <h1>Parking CHP</h1>
+      <div class="hsub">Estacionamiento de médicos</div>
+    </div>
+  </div>
+  <p id="hdr-fecha">Registro de médicos</p>
+</header>
+
+<main>
+<!-- ============ HOY ============ -->
+<section class="view on" id="v-hoy">
+  <div class="searchwrap">
+    <div class="searchbox">
+      <span class="sic">🔍</span>
+      <input id="buscador" type="search" placeholder="Buscar patente o doctor…" autocomplete="off">
+    </div>
+  </div>
+
+  <div class="counters" style="margin-bottom:14px">
+    <div><div class="n" id="c-llave" style="color:var(--bad)">0</div><div class="l">LLAVES CONMIGO</div></div>
+    <div><div class="n" id="c-porsalir" style="color:var(--wait)">0</div><div class="l">AUTOS POR SALIR</div></div>
+    <div><div class="n" id="c-listos" style="color:var(--ok)">0</div><div class="l">LISTOS HOY</div></div>
+  </div>
+
+  <button class="btn accent" id="btn-nuevo">＋ Nuevo registro</button>
+  <p class="note" id="nota-ejemplo" style="margin:10px 2px 4px">Los registros que ves son <b>de ejemplo</b>, tomados de la planilla del 21 y 22 de octubre. Puedes editarlos o borrarlos.</p>
+
+  <div id="lista-hoy"></div>
+
+  <div class="card">
+    <h2>Respaldo</h2>
+    <p class="note" style="margin-bottom:10px">Todo se respalda solo en la nube: si se pierde o cambia el teléfono, los registros se recuperan al abrir la app en el teléfono nuevo. También puedes exportar un respaldo manual.</p>
+    <p class="note" id="nube-estado" style="font-weight:700;margin-bottom:10px">☁ Respaldo en la nube: conectando…</p>
+    <div class="rowbtns">
+      <button class="btn ghost sm" id="btn-exportar">Exportar</button>
+      <button class="btn ghost sm" id="btn-importar">Importar</button>
+    </div>
+    <input type="file" id="file-importar" accept="application/json" style="display:none">
+  </div>
+</section>
+
+<!-- ============ FORMULARIO ============ -->
+<section class="view" id="v-form">
+  <div class="card">
+    <h2 id="form-titulo">Nuevo registro</h2>
+
+    <label for="f-fecha">Día</label>
+    <input id="f-fecha" type="date">
+
+    <label for="f-patente">Patente</label>
+    <input id="f-patente" list="dl-patentes" placeholder="Ej: TSLZ-63" autocomplete="off" style="text-transform:uppercase;font-family:'Courier New',monospace;font-weight:900;font-size:1.35rem;letter-spacing:2px">
+    <datalist id="dl-patentes"></datalist>
+
+    <div id="sugerencia">
+      <div class="t">Esa patente ya ha venido. ¿Quién vino hoy?</div>
+      <div class="chips" id="sug-nombres"></div>
+      <p class="note" style="margin-top:8px">El box, el servicio y el apunte se rellenaron con los datos de la última vez. Cámbialos si hoy son distintos.</p>
+    </div>
+
+    <label for="f-medico">Nombre del doctor / doctora</label>
+    <input id="f-medico" list="dl-nombres" placeholder="Ej: Carmelo González" autocomplete="off">
+    <datalist id="dl-nombres"></datalist>
+
+    <label for="f-box">Box (consulta donde atiende)</label>
+    <input id="f-box" placeholder="Ej: 42, Piso 2" autocomplete="off">
+
+    <label>Servicio</label>
+    <div class="chips" id="seg-servicio"></div>
+    <input id="f-servicio-otro" placeholder="Escribe el servicio" autocomplete="off" style="display:none;margin-top:10px">
+
+    <label for="f-apunte">Apunte (marca del auto, opcional)</label>
+    <input id="f-apunte" placeholder="Ej: Toyota" autocomplete="off">
+
+    <div class="rowbtns" style="margin-top:22px">
+      <button class="btn ghost" id="btn-cancelar">Cancelar</button>
+      <button class="btn" id="btn-guardar">Guardar</button>
+    </div>
+    <button class="btn danger" id="btn-anular" style="margin-top:12px;display:none">Anular este registro</button>
+    <button class="del" id="btn-borrar" style="display:none;width:100%">Borrar definitivamente</button>
+  </div>
+</section>
+
+<!-- ============ HISTORIAL ============ -->
+<section class="view" id="v-historial">
+  <div id="hist-lista"></div>
+  <div id="hist-detalle" style="display:none">
+    <button class="btn ghost sm" id="btn-volver-hist" style="margin-bottom:12px">← Volver a los días</button>
+    <h2 id="hist-detalle-titulo" style="text-transform:capitalize"></h2>
+    <div id="hist-detalle-lista"></div>
+  </div>
+</section>
+</main>
+
+<nav>
+  <button id="nav-hoy" class="on"><span>📋</span>Hoy</button>
+  <button id="nav-historial"><span>🗓️</span>Días anteriores</button>
+</nav>
+
+<div id="toast" role="status"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+'use strict';
+var LS_KEY = 'parking_chp_v2';
+var SERVICIOS = ['Consultas','Pabellón','Ginecología','UPC','Urgencia','Neo','Endoscopía','C. Mujer','Cardiología','Otro'];
+
+function pad(n){ return (n<10?'0':'')+n; }
+function hoyStr(d){ d = d || new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function uid(){ return 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+function seedData(){
+  function e(fecha, medico, patente, box, servicio, apunte, llave, retirado){
+    return {id:uid()+Math.random().toString(36).slice(2,5), fecha:fecha, medico:medico, patente:patente, box:box,
+      servicio:servicio, apunte:apunte||'', llaveDevuelta:!!llave, vehiculoRetirado:!!retirado,
+      tsLlave: llave?Date.now():null, tsRetirado: retirado?Date.now():null, anulado:false, ejemplo:false};
+  }
+  var hoy = hoyStr();
+  return { entries: [
+    // días anteriores (de la planilla real, 21 y 22 de octubre)
+    e('2026-10-21','Rodrigo Díaz','HLLC-58','47','Consultas','',true,true),
+    e('2026-10-21','Ana María','VFJW-38','42','Consultas','Kia',true,true),
+    e('2026-10-21','Carmelo González','TSLZ-63','09','Ginecología','',true,true),
+    e('2026-10-22','Pablo Manchini','VFJW-38','42','Consultas','Kia',true,true),
+    e('2026-10-22','Carmelo González','TSLZ-63','07','Ginecología','Toyota',true,true),
+    e('2026-10-22','Fdo. Zamora','TWDP-63','38','Consultas','Peugeot',true,true),
+    e('2026-10-22','Claudia Gutiérrez','VVJR-54','—','Pabellón','Toyota',true,true),
+  ]};
+}
+function load(){
+  try{
+    var raw = localStorage.getItem(LS_KEY);
+    if(!raw) return seedData();
+    var d = JSON.parse(raw);
+    if(!d || !Array.isArray(d.entries)) return seedData();
+    return d;
+  }catch(err){ return seedData(); }
+}
+function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(data)); }catch(err){} }
+var _saveLocal = save;
+save = function(){ _saveLocal(); programarSubida(); };
+var data = load(); save();
+
+/* ---------- utilidades ---------- */
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function sinAcentos(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+function normPatente(s){ return String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
+function fmtPatente(s){
+  var n = normPatente(s);
+  if(/^[A-Z]{4}[0-9]{2}$/.test(n)) return n.slice(0,4)+'-'+n.slice(4);
+  if(/^[A-Z]{2}[0-9]{4}$/.test(n)) return n.slice(0,2)+'-'+n.slice(2);
+  return String(s||'').toUpperCase().trim();
+}
+function normTexto(s){ return sinAcentos(String(s||'')).toLowerCase().trim(); }
+function toast(msg){
+  var t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 2200);
+}
+function fechaLinda(fstr){
+  try{
+    var p = fstr.split('-'); var d = new Date(+p[0], +p[1]-1, +p[2]);
+    return d.toLocaleDateString('es-CL', {weekday:'long', day:'numeric', month:'long'});
+  }catch(err){ return fstr; }
+}
+function horaDe(ts){
+  if(!ts) return '';
+  try{ return new Date(ts).toLocaleTimeString('es-CL', {hour:'2-digit', minute:'2-digit'}); }catch(err){ return ''; }
+}
+function completo(e){ return e.llaveDevuelta && e.vehiculoRetirado; }
+
+/* ---------- navegación ---------- */
+function show(name){
+  document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('on'); });
+  document.getElementById('v-'+name).classList.add('on');
+  document.getElementById('nav-hoy').classList.toggle('on', name==='hoy' || name==='form');
+  document.getElementById('nav-historial').classList.toggle('on', name==='historial');
+  window.scrollTo(0,0);
+  if(name!=='form' && nubePendienteData){ var m = nubePendienteData; nubePendienteData = null; aplicarFusion(m); }
+}
+document.getElementById('nav-hoy').addEventListener('click', function(){ show('hoy'); });
+document.getElementById('nav-historial').addEventListener('click', function(){ diaAbierto = null; renderHistorial(); show('historial'); });
+document.getElementById('hdr-fecha').textContent = fechaLinda(hoyStr());
+
+/* ---------- tarjetas de registro ---------- */
+function estadoBadge(e){
+  if(e.anulado) return '<span class="badge pend">Anulado</span>';
+  if(!e.llaveDevuelta) return '<span class="badge pend">Llave conmigo</span>';
+  if(!e.vehiculoRetirado) return '<span class="badge wait">Llave devuelta · auto aún aquí</span>';
+  return '<span class="badge done">✓ Listo</span>';
+}
+function cardHTML(e, mostrarFecha){
+  var cls = e.anulado ? ' strike' : '';
+  var st = e.anulado ? 'st-done' : (!e.llaveDevuelta ? 'st-pend' : (!e.vehiculoRetirado ? 'st-wait' : 'st-done'));
+  return '<div class="card ' + st + '">' +
+    '<div class="car-top"><span class="plate">' + esc(e.patente) + '</span>' +
+    (mostrarFecha ? '<span class="badge fecha">' + esc(fechaLinda(e.fecha)) + '</span>' : estadoBadge(e)) + '</div>' +
+    '<div class="medico' + cls + '">' + esc(e.medico) + '</div>' +
+    '<div class="meta">Box <b>' + esc(e.box || '—') + '</b> · ' + esc(e.servicio || 'Sin servicio') +
+    (e.apunte ? ' · (' + esc(e.apunte) + ')' : '') + '</div>' +
+    (e.llaveDevuelta && e.tsLlave ? '<div class="meta">Llave devuelta a las ' + esc(horaDe(e.tsLlave)) + '</div>' : '') +
+    (e.anulado ? '' :
+    '<div class="togs">' +
+      '<button class="tog' + (e.llaveDevuelta?' on':'') + '" data-tllave="' + esc(e.id) + '"><span class="ck">' + (e.llaveDevuelta?'✓':'🔑') + '</span>Llave devuelta</button>' +
+      '<button class="tog' + (e.vehiculoRetirado?' on':'') + '" data-tretiro="' + esc(e.id) + '"><span class="ck">' + (e.vehiculoRetirado?'✓':'🚗') + '</span>Auto retirado</button>' +
+    '</div>' +
+    '<button class="btn ghost sm" data-edit="' + esc(e.id) + '" style="margin-top:12px">Editar</button>') +
+    '</div>';
+}
+function bindCards(wrap){
+  wrap.querySelectorAll('[data-tllave]').forEach(function(b){
+    b.addEventListener('click', function(){ toggleEntry(b.getAttribute('data-tllave'), 'llave'); });
+  });
+  wrap.querySelectorAll('[data-tretiro]').forEach(function(b){
+    b.addEventListener('click', function(){ toggleEntry(b.getAttribute('data-tretiro'), 'retiro'); });
+  });
+  wrap.querySelectorAll('[data-edit]').forEach(function(b){
+    b.addEventListener('click', function(){ openForm(b.getAttribute('data-edit')); });
+  });
+}
+function toggleEntry(id, cual){
+  var e = data.entries.find(function(x){ return x.id===id; });
+  if(!e) return;
+  if(cual==='llave'){
+    e.llaveDevuelta = !e.llaveDevuelta;
+    e.tsLlave = e.llaveDevuelta ? Date.now() : null;
+    toast(e.llaveDevuelta ? 'Llave devuelta ✓' : 'Llave marcada como NO devuelta');
+  } else {
+    e.vehiculoRetirado = !e.vehiculoRetirado;
+    e.tsRetirado = e.vehiculoRetirado ? Date.now() : null;
+    toast(e.vehiculoRetirado ? 'Auto retirado ✓' : 'Auto marcado como NO retirado');
+  }
+  save(); renderAll();
+}
+
+/* ---------- vista HOY + buscador ---------- */
+var textoBusqueda = '';
+document.getElementById('buscador').addEventListener('input', function(ev){ textoBusqueda = ev.target.value; renderHoy(); });
+
+function entryMatches(e){
+  if(e.anulado) return false;
+  if(!textoBusqueda) return true;
+  var qP = normPatente(textoBusqueda), qT = normTexto(textoBusqueda);
+  return (qP.length>0 && normPatente(e.patente).indexOf(qP)!==-1) ||
+         normTexto(e.medico).indexOf(qT)!==-1 ||
+         normTexto(e.servicio).indexOf(qT)!==-1 ||
+         normTexto(e.box).indexOf(qT)!==-1;
+}
+function renderHoy(){
+  var hoy = hoyStr();
+  var activos = data.entries.filter(function(e){ return !e.anulado; });
+  var ambito = activos.filter(function(e){ return e.fecha===hoy || !completo(e); });
+  document.getElementById('c-llave').textContent = ambito.filter(function(e){ return !e.llaveDevuelta; }).length;
+  document.getElementById('c-porsalir').textContent = ambito.filter(function(e){ return e.llaveDevuelta && !e.vehiculoRetirado; }).length;
+  document.getElementById('c-listos').textContent = activos.filter(function(e){ return e.fecha===hoy && completo(e); }).length;
+  document.getElementById('nota-ejemplo').style.display = data.entries.some(function(e){ return e.ejemplo; }) ? '' : 'none';
+
+  var wrap = document.getElementById('lista-hoy');
+  if(textoBusqueda){
+    var res = activos.filter(entryMatches).slice().sort(function(a,b){ return a.fecha<b.fecha?1:-1; });
+    wrap.innerHTML = '<h3 class="sec">' + res.length + ' resultado(s) en todos los días</h3>' +
+      (res.length ? res.map(function(e){ return cardHTML(e, true); }).join('')
+                  : '<div class="card empty">No se encontró esa patente ni ese doctor.</div>');
+    bindCards(wrap); return;
+  }
+  var pendientesViejos = activos.filter(function(e){ return e.fecha!==hoy && !completo(e); })
+    .sort(function(a,b){ return a.fecha<b.fecha?-1:1; });
+  var deHoy = activos.filter(function(e){ return e.fecha===hoy; });
+  var pendHoy = deHoy.filter(function(e){ return !completo(e); })
+    .sort(function(a,b){ return (a.llaveDevuelta?1:0)-(b.llaveDevuelta?1:0); });
+  var listosHoy = deHoy.filter(completo);
+
+  var html = '';
+  if(pendientesViejos.length){
+    html += '<h3 class="sec">⚠ Pendientes de días anteriores</h3>' + pendientesViejos.map(function(e){ return cardHTML(e, true); }).join('');
+  }
+  html += '<h3 class="sec">Registros de hoy</h3>';
+  html += pendHoy.length ? pendHoy.map(function(e){ return cardHTML(e, false); }).join('')
+                         : '<div class="card empty">No hay registros pendientes de hoy.<br>Toca <b>“Nuevo registro”</b> cuando un doctor te deje una llave.</div>';
+  if(listosHoy.length){
+    html += '<h3 class="sec">✓ Listos de hoy</h3>' + listosHoy.map(function(e){ return cardHTML(e, false); }).join('');
+  }
+  wrap.innerHTML = html;
+  bindCards(wrap);
+}
+
+/* ---------- historial ---------- */
+var diaAbierto = null;
+function renderHistorial(){
+  var lista = document.getElementById('hist-lista');
+  var detalle = document.getElementById('hist-detalle');
+  if(diaAbierto){
+    lista.style.display = 'none'; detalle.style.display = '';
+    document.getElementById('hist-detalle-titulo').textContent = fechaLinda(diaAbierto);
+    var delDia = data.entries.filter(function(e){ return e.fecha===diaAbierto; });
+    var wrap = document.getElementById('hist-detalle-lista');
+    wrap.innerHTML = delDia.length ? delDia.map(function(e){ return cardHTML(e, false); }).join('')
+                                    : '<div class="card empty">Sin registros este día.</div>';
+    bindCards(wrap);
+    return;
+  }
+  detalle.style.display = 'none'; lista.style.display = '';
+  var dias = {};
+  data.entries.forEach(function(e){ (dias[e.fecha] = dias[e.fecha] || []).push(e); });
+  var claves = Object.keys(dias).sort().reverse();
+  if(!claves.length){ lista.innerHTML = '<div class="card empty">Todavía no hay días registrados.</div>'; return; }
+  lista.innerHTML = claves.map(function(f){
+    var arr = dias[f].filter(function(e){ return !e.anulado; });
+    var pend = arr.filter(function(e){ return !completo(e); }).length;
+    return '<button class="dayrow" data-dia="' + esc(f) + '"><span><span class="d">' + esc(fechaLinda(f)) + '</span><br>' +
+      '<span class="s">' + arr.length + ' registro(s)' + (pend ? ' · ' + pend + ' pendiente(s)' : ' · todos listos ✓') + '</span></span><span style="font-size:1.4rem">›</span></button>';
+  }).join('');
+  lista.querySelectorAll('[data-dia]').forEach(function(b){
+    b.addEventListener('click', function(){ diaAbierto = b.getAttribute('data-dia'); renderHistorial(); window.scrollTo(0,0); });
+  });
+}
+document.getElementById('btn-volver-hist').addEventListener('click', function(){ diaAbierto = null; renderHistorial(); });
+
+/* ---------- sugerencias desde el historial (la "base") ---------- */
+function sugerenciaPara(patente){
+  var np = normPatente(patente);
+  if(!np) return null;
+  var prev = data.entries.filter(function(e){ return !e.anulado && normPatente(e.patente)===np; })
+    .sort(function(a,b){ return a.fecha<b.fecha?1:-1; });
+  if(!prev.length) return null;
+  var nombres = [];
+  prev.forEach(function(e){ if(nombres.indexOf(e.medico)===-1) nombres.push(e.medico); });
+  return { nombres: nombres, ultimo: prev[0] };
+}
+function refrescarDatalists(){
+  var pat = {}, nom = {};
+  data.entries.forEach(function(e){ if(!e.anulado){ pat[e.patente]=1; nom[e.medico]=1; } });
+  document.getElementById('dl-patentes').innerHTML = Object.keys(pat).map(function(p){ return '<option value="'+esc(p)+'">'; }).join('');
+  document.getElementById('dl-nombres').innerHTML = Object.keys(nom).map(function(n){ return '<option value="'+esc(n)+'">'; }).join('');
+}
+
+/* ---------- formulario ---------- */
+var editId = null;
+var formServicio = 'Consultas';
+function setServicio(valor, otroTexto){
+  formServicio = valor || 'Consultas';
+  document.querySelectorAll('#seg-servicio button').forEach(function(b){
+    b.classList.toggle('on', b.getAttribute('data-serv')===formServicio);
+  });
+  var esOtro = formServicio==='Otro';
+  var inp = document.getElementById('f-servicio-otro');
+  inp.style.display = esOtro ? '' : 'none';
+  if(esOtro && otroTexto!=null) inp.value = otroTexto;
+}
+function buildServicioChips(){
+  document.getElementById('seg-servicio').innerHTML = SERVICIOS.map(function(s){
+    return '<button type="button" data-serv="' + esc(s) + '">' + esc(s) + '</button>';
+  }).join('');
+  document.querySelectorAll('#seg-servicio button').forEach(function(b){
+    b.addEventListener('click', function(){ setServicio(b.getAttribute('data-serv')); });
+  });
+}
+function aplicarSugerencia(){
+  var sug = sugerenciaPara(document.getElementById('f-patente').value);
+  var box = document.getElementById('sugerencia');
+  if(!sug){ box.style.display = 'none'; return; }
+  box.style.display = '';
+  var u = sug.ultimo;
+  document.getElementById('f-box').value = u.box || '';
+  document.getElementById('f-apunte').value = u.apunte || '';
+  if(SERVICIOS.indexOf(u.servicio)!==-1 && u.servicio!=='Otro') setServicio(u.servicio);
+  else if(u.servicio) setServicio('Otro', u.servicio);
+  document.getElementById('sug-nombres').innerHTML = sug.nombres.map(function(n){
+    return '<button type="button" data-nombre="' + esc(n) + '">' + esc(n) + '</button>';
+  }).join('');
+  document.querySelectorAll('#sug-nombres button').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.getElementById('f-medico').value = b.getAttribute('data-nombre');
+      document.querySelectorAll('#sug-nombres button').forEach(function(x){ x.classList.toggle('on', x===b); });
+    });
+  });
+  if(sug.nombres.length===1) document.getElementById('f-medico').value = sug.nombres[0];
+}
+document.getElementById('f-patente').addEventListener('input', function(e){
+  e.target.value = e.target.value.toUpperCase();
+  if(!editId) aplicarSugerencia();
+});
+function openForm(id){
+  editId = id || null;
+  var e = id ? data.entries.find(function(x){ return x.id===id; }) : null;
+  document.getElementById('form-titulo').textContent = e ? 'Editar registro' : 'Nuevo registro';
+  document.getElementById('f-fecha').value = e ? e.fecha : hoyStr();
+  document.getElementById('f-patente').value = e ? e.patente : '';
+  document.getElementById('f-medico').value = e ? e.medico : '';
+  document.getElementById('f-box').value = e ? (e.box || '') : '';
+  document.getElementById('f-apunte').value = e ? (e.apunte || '') : '';
+  document.getElementById('sugerencia').style.display = 'none';
+  if(e){
+    if(SERVICIOS.indexOf(e.servicio)!==-1 && e.servicio!=='Otro') setServicio(e.servicio);
+    else setServicio('Otro', e.servicio || '');
+  } else setServicio('Consultas');
+  document.getElementById('btn-anular').style.display = e ? '' : 'none';
+  document.getElementById('btn-borrar').style.display = e ? '' : 'none';
+  refrescarDatalists();
+  show('form');
+}
+document.getElementById('btn-nuevo').addEventListener('click', function(){ openForm(null); });
+document.getElementById('btn-cancelar').addEventListener('click', function(){ show('hoy'); });
+document.getElementById('btn-guardar').addEventListener('click', function(){
+  var fecha = document.getElementById('f-fecha').value || hoyStr();
+  var patente = fmtPatente(document.getElementById('f-patente').value);
+  var medico = document.getElementById('f-medico').value.trim();
+  var box = document.getElementById('f-box').value.trim();
+  var apunte = document.getElementById('f-apunte').value.trim();
+  var servicio = formServicio==='Otro' ? document.getElementById('f-servicio-otro').value.trim() : formServicio;
+  if(!patente){ toast('Falta la patente'); return; }
+  if(!medico){ toast('Falta el nombre del doctor'); return; }
+  if(editId){
+    var e = data.entries.find(function(x){ return x.id===editId; });
+    if(e){ e.fecha=fecha; e.patente=patente; e.medico=medico; e.box=box; e.servicio=servicio; e.apunte=apunte; delete e.ejemplo; }
+    toast('Registro actualizado');
+  } else {
+    data.entries.push({id:uid(), fecha:fecha, medico:medico, patente:patente, box:box, servicio:servicio, apunte:apunte,
+      llaveDevuelta:false, vehiculoRetirado:false, tsLlave:null, tsRetirado:null, anulado:false});
+    toast('Registro agregado — llave en tu poder');
+  }
+  save(); renderAll(); show('hoy');
+});
+document.getElementById('btn-anular').addEventListener('click', function(){
+  if(!editId) return;
+  if(!confirm('¿Anular este registro? Quedará tachado en el historial del día.')) return;
+  var e = data.entries.find(function(x){ return x.id===editId; });
+  if(e) e.anulado = true;
+  save(); renderAll(); show('hoy'); toast('Registro anulado');
+});
+document.getElementById('btn-borrar').addEventListener('click', function(){
+  if(!editId) return;
+  if(!confirm('¿Borrar definitivamente este registro?')) return;
+  data.entries = data.entries.filter(function(x){ return x.id!==editId; });
+  save(); renderAll(); show('hoy'); toast('Registro borrado');
+});
+
+/* ---------- respaldo ---------- */
+document.getElementById('btn-exportar').addEventListener('click', function(){
+  var blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'parking-chp-respaldo.json';
+  a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
+});
+document.getElementById('btn-importar').addEventListener('click', function(){ document.getElementById('file-importar').click(); });
+document.getElementById('file-importar').addEventListener('change', function(ev){
+  var f = ev.target.files[0]; if(!f) return;
+  var r = new FileReader();
+  r.onload = function(){
+    try{
+      var d = JSON.parse(r.result);
+      if(!d || !Array.isArray(d.entries)) throw new Error('formato');
+      if(!confirm('Esto reemplaza los datos actuales por los del respaldo. ¿Continuar?')) return;
+      data = d; save(); renderAll(); toast('Respaldo importado');
+    }catch(err){ toast('Ese archivo no es un respaldo válido'); }
+  };
+  r.readAsText(f);
+  ev.target.value = '';
+});
+
+/* ---------- PWA: service worker externo ---------- */
+if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+
+
+/* ---------- Respaldo en la nube (Firebase, proyecto finanzas-bugueno; coleccion parking_registros) ---------- */
+var FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBa4XTJo47f3ZutCwIabO89SNTopQqTljc",
+  authDomain: "finanzas-bugueno.firebaseapp.com",
+  projectId: "finanzas-bugueno",
+  storageBucket: "finanzas-bugueno.firebasestorage.app",
+  messagingSenderId: "745240953305",
+  appId: "1:745240953305:web:37595a80c087fef80799c8"
+};
+var COL_REG = 'parking_registros';
+var nubeOn = false, nubeDb = null, nubeAplicando = false, nubeTimer = null, nubeSyncMap = {}, nubePendienteData = null;
+function canon(o){
+  if(o===null || typeof o!=='object') return JSON.stringify(o);
+  if(Array.isArray(o)) return '[' + o.map(canon).join(',') + ']';
+  return '{' + Object.keys(o).sort().map(function(k){ return JSON.stringify(k) + ':' + canon(o[k]); }).join(',') + '}';
+}
+function docDe(e){
+  return { fecha:e.fecha||'', medico:e.medico||'', patente:e.patente||'', box:e.box||'', servicio:e.servicio||'',
+    apunte:e.apunte||'', llaveDevuelta:!!e.llaveDevuelta, vehiculoRetirado:!!e.vehiculoRetirado,
+    tsLlave:e.tsLlave||null, tsRetirado:e.tsRetirado||null, anulado:!!e.anulado };
+}
+function pintarNube(){
+  var el = document.getElementById('nube-estado'); if(!el) return;
+  el.textContent = nubeOn
+    ? '☁ Respaldo en la nube ACTIVADO: todo se guarda automáticamente fuera del teléfono.'
+    : '☁ Respaldo en la nube sin conexión por ahora: los datos quedan en el teléfono y se respaldan al volver internet.';
+  el.style.color = nubeOn ? 'var(--ok)' : 'var(--wait)';
+}
+function programarSubida(){
+  if(!nubeOn || nubeAplicando) return;
+  clearTimeout(nubeTimer);
+  nubeTimer = setTimeout(subirCambios, 1200);
+}
+function subirCambios(){
+  if(!nubeOn || !nubeDb || nubeAplicando) return;
+  try{
+    var batch = nubeDb.batch(); var n = 0;
+    var idsLocales = {};
+    data.entries.forEach(function(e){
+      idsLocales[e.id] = 1;
+      var c = canon(docDe(e));
+      if(nubeSyncMap[e.id] !== c){ batch.set(nubeDb.collection(COL_REG).doc(e.id), docDe(e)); nubeSyncMap[e.id] = c; n++; }
+    });
+    Object.keys(nubeSyncMap).forEach(function(id){
+      if(!idsLocales[id]){ batch.delete(nubeDb.collection(COL_REG).doc(id)); delete nubeSyncMap[id]; n++; }
+    });
+    if(!n) return;
+    batch.commit().catch(function(err){ console.log('Error subiendo respaldo', err); });
+  }catch(err){ console.log('Error preparando respaldo', err); }
+}
+function aplicarFusion(merged){
+  nubeAplicando = true;
+  data.entries = merged;
+  _saveLocal();
+  nubeAplicando = false;
+  renderAll();
+}
+function escucharRegistros(){
+  nubeDb.collection(COL_REG).onSnapshot(function(snap){
+    var prevMap = nubeSyncMap;
+    var cloudMap = {}, cloudById = {};
+    snap.forEach(function(d){ var o = d.data(); o.id = d.id; cloudById[d.id] = o; cloudMap[d.id] = canon(docDe(o)); });
+    nubeSyncMap = cloudMap;
+    var localById = {};
+    data.entries.forEach(function(e){ localById[e.id] = e; });
+    var merged = [], ids = {};
+    Object.keys(cloudById).forEach(function(id){ ids[id] = 1; });
+    Object.keys(localById).forEach(function(id){ ids[id] = 1; });
+    Object.keys(ids).forEach(function(id){
+      var l = localById[id], c = cloudById[id];
+      if(c && !l) merged.push(c);
+      else if(l && !c){
+        if(prevMap[id] && canon(docDe(l)) === prevMap[id]){ /* borrado en la nube y local sin cambios: se descarta */ }
+        else merged.push(l);
+      }
+      else {
+        var sucioLocal = prevMap[id] !== canon(docDe(l));
+        merged.push(sucioLocal ? l : c);
+      }
+    });
+    if(canon(merged.map(docDe)) !== canon(data.entries.map(docDe))){
+      if(document.getElementById('v-form').classList.contains('on')){ nubePendienteData = merged; }
+      else aplicarFusion(merged);
+    }
+    programarSubida();
+  }, function(err){ console.log('Error escuchando respaldo', err); });
+}
+function subirTodoInicial(){
+  var batch = nubeDb.batch();
+  data.entries.forEach(function(e){ batch.set(nubeDb.collection(COL_REG).doc(e.id), docDe(e)); });
+  return batch.commit();
+}
+function initNube(){
+  if(typeof firebase === 'undefined' || !FIREBASE_CONFIG){ pintarNube(); return; }
+  (async function(){
+    try{
+      if(!firebase.apps.length){ firebase.initializeApp(FIREBASE_CONFIG); await firebase.auth().signInAnonymously(); }
+      nubeDb = firebase.firestore();
+      try{ await nubeDb.enablePersistence({synchronizeTabs:true}); }catch(err){}
+      if(localStorage.getItem('parking-migrado') !== '1'){
+        var s1 = await nubeDb.collection(COL_REG).limit(1).get();
+        if(s1.empty && data.entries.length) await subirTodoInicial();
+        localStorage.setItem('parking-migrado', '1');
+      }
+      nubeOn = true;
+      escucharRegistros();
+      pintarNube();
+      programarSubida();
+    }catch(err){
+      nubeOn = false; console.log('Nube no disponible', err); pintarNube();
+    }
+  })();
+}
+window.addEventListener('online', function(){ if(!nubeOn) initNube(); else programarSubida(); });
+
+function renderAll(){ renderHoy(); renderHistorial(); refrescarDatalists(); }
+buildServicioChips();
+renderAll();
+initNube();
+</script>
+</body>
+</html>
