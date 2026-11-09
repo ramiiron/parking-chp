@@ -102,34 +102,9 @@ nav button span{display:block;font-size:1.3rem;margin-bottom:2px}
 #toast.show{opacity:1}
 .del{background:none;color:var(--bad);font-weight:700;min-height:44px;padding:6px 10px;box-shadow:none}
 
-/* ---------- Acceso (login con correo) ---------- */
-body:not(.unlocked) header, body:not(.unlocked) main, body:not(.unlocked) nav{visibility:hidden}
-#v-login{position:fixed;inset:0;z-index:3000;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
-body.unlocked #v-login{display:none}
-.login-card{background:var(--card);border:1.5px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:26px 22px;width:100%;max-width:380px}
-.login-card img{width:64px;height:64px;border-radius:14px;display:block;margin:0 auto 12px}
-.login-card h2{text-align:center;margin-bottom:6px}
-.login-card>p{text-align:center;color:var(--muted);font-size:.95rem;line-height:1.5}
-.login-error{font-size:.95rem;line-height:1.45;color:var(--bad);background:var(--badbg);border-radius:12px;padding:10px 12px}
-.login-error.login-ok{color:var(--ok);background:var(--okbg)}
-.login-link{display:block;margin:8px auto 0;background:none;color:var(--brand);font-weight:800;font-size:.98rem;min-height:48px;box-shadow:none}
 </style>
 </head>
 <body>
-<div id="v-login">
-  <div class="login-card">
-    <img src="icons/icon-192.png" alt="Parking CHP">
-    <h2>Parking CHP</h2>
-    <p>Ingresa con la cuenta autorizada para ver y respaldar los registros del estacionamiento.</p>
-    <label>Correo</label>
-    <input id="login-email" type="email" autocomplete="username" placeholder="correo@ejemplo.com">
-    <label>Contraseña</label>
-    <input id="login-pass" type="password" autocomplete="current-password" placeholder="Tu contraseña">
-    <p class="login-error" id="login-error" style="display:none"></p>
-    <button class="btn" id="btn-login" style="margin-top:18px">Ingresar</button>
-    <button class="login-link" id="login-olvide">Olvidé mi contraseña</button>
-  </div>
-</div>
 <header>
   <div class="brand">
     <div class="logo">P</div>
@@ -171,8 +146,6 @@ body.unlocked #v-login{display:none}
       <button class="btn ghost sm" id="btn-importar">Importar</button>
     </div>
     <input type="file" id="file-importar" accept="application/json" style="display:none">
-    <p class="note" id="cuenta-estado" style="margin-top:12px"></p>
-    <button class="btn ghost sm" id="btn-salir" style="display:none;width:100%;margin-top:8px">Cerrar sesión</button>
   </div>
 </section>
 
@@ -695,25 +668,10 @@ function subirTodoInicial(){
   data.entries.forEach(function(e){ batch.set(nubeDb.collection(COL_REG).doc(e.id), docDe(e)); });
   return batch.commit();
 }
-/* ---------- Acceso con correo y contraseña (compuerta) ----------
-   Sin una sesión de correo válida la app queda bloqueada en la pantalla de
-   ingreso y el respaldo en la nube no parte. La sesión anónima heredada NO
-   sirve: se cierra al detectarla. */
-var nubeAuthOk = false, nubeListenerOn = false;
-function loginMsg(txt, ok){
-  var e = document.getElementById('login-error'); if(!e) return;
-  e.textContent = txt; e.style.display = 'block';
-  e.classList.toggle('login-ok', !!ok);
-}
-function intentarLogin(){
-  var email = (document.getElementById('login-email').value || '').trim();
-  var pass = document.getElementById('login-pass').value;
-  if(!email || !pass){ loginMsg('Escribe tu correo y tu contraseña.'); return; }
-  firebase.auth().signInWithEmailAndPassword(email, pass).catch(function(err){
-    if(err && err.code === 'auth/too-many-requests') loginMsg('Demasiados intentos seguidos. Espera unos minutos e inténtalo de nuevo.');
-    else loginMsg('No pudimos ingresar: revisa el correo y la contraseña.');
-  });
-}
+/* ---------- Respaldo en la nube: acceso automático, sin contraseña ----------
+   La app entra sola con una sesión anónima: nadie tiene que escribir una
+   contraseña para usarla ni para que el respaldo funcione. */
+var nubeListenerOn = false;
 async function activarNube(){
   if(nubeOn) return;
   try{
@@ -738,7 +696,6 @@ function initNube(esperado){
     if(typeof firebase === 'undefined' && FIREBASE_CONFIG){
       esperado = esperado || 0;
       if(esperado < 5000){ setTimeout(function(){ initNube(esperado + 500); }, 500); return; }
-      loginMsg('Sin conexión para verificar tu sesión. Revisa internet y vuelve a abrir la app.');
     }
     pintarNube(); return;
   }
@@ -746,33 +703,12 @@ function initNube(esperado){
     if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
     if(nubeListenerOn) return; nubeListenerOn = true;
     firebase.auth().onAuthStateChanged(function(user){
-      if(!user || user.isAnonymous){
-        if(user) firebase.auth().signOut();
-        nubeAuthOk = false;
-        document.body.classList.remove('unlocked');
-        return;
-      }
-      nubeAuthOk = true;
-      document.body.classList.add('unlocked');
-      var ce = document.getElementById('cuenta-estado'); if(ce) ce.textContent = 'Sesión iniciada como ' + (user.email || '') + '.';
-      var bs = document.getElementById('btn-salir'); if(bs) bs.style.display = '';
-      activarNube();
+      if(user){ activarNube(); return; }
+      firebase.auth().signInAnonymously().catch(function(err){ console.log('Sin sesión de respaldo', err); pintarNube(); });
     });
   }catch(err){ console.log('Nube no disponible', err); pintarNube(); }
 }
-window.addEventListener('online', function(){ if(!nubeOn && nubeAuthOk) activarNube(); else if(nubeOn) programarSubida(); });
-document.getElementById('btn-login').addEventListener('click', intentarLogin);
-document.getElementById('login-pass').addEventListener('keydown', function(ev){ if(ev.key === 'Enter') intentarLogin(); });
-document.getElementById('login-olvide').addEventListener('click', function(){
-  var email = (document.getElementById('login-email').value || '').trim();
-  if(!email){ loginMsg('Escribe primero tu correo y después toca «Olvidé mi contraseña».'); return; }
-  firebase.auth().sendPasswordResetEmail(email).then(function(){
-    loginMsg('Te enviamos un correo para crear una contraseña nueva. Revisa la bandeja de ' + email + '.', true);
-  }).catch(function(){ loginMsg('No pudimos enviar el correo. Revisa que la dirección esté bien escrita.'); });
-});
-document.getElementById('btn-salir').addEventListener('click', function(){
-  firebase.auth().signOut().then(function(){ location.reload(); }).catch(function(){ location.reload(); });
-});
+window.addEventListener('online', function(){ if(!nubeOn) initNube(); else programarSubida(); });
 
 function renderAll(){ renderHoy(); renderHistorial(); refrescarDatalists(); }
 buildServicioChips();
