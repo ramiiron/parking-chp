@@ -1,5 +1,5 @@
 'use strict';
-var CACHE = 'parking-chp-v2';
+var CACHE = 'parking-chp-v3';
 var ASSETS = [
   './',
   './index.html',
